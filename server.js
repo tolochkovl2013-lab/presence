@@ -486,18 +486,19 @@ function geminiHistory(history = []) {
 }
 
 /* один проход к Gemini с инструментами, с откатом на «без инструментов» */
-async function geminiTurn({ s, model, contents, tools = true }) {
+async function geminiTurn({ s, model, contents, tools = true, fast = false }) {
   const body = {
     systemInstruction: { parts: [{ text: s.system || 'Ты Астра, голосовой ассистент в компьютере. Отвечай коротко и по делу, по-русски.' }] },
     contents,
-    generationConfig: { maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
+    generationConfig: { maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
   };
   if (tools) body.tools = [{ functionDeclarations: TOOL_DECLS }];
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': s.apiKey },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(90000),
+    // быстрый таймаут: если модель тормозит или 503 — сразу идём на следующую
+    signal: AbortSignal.timeout(fast ? 25000 : 60000),
   });
   const j = await r.json();
   if (j.error) {
@@ -510,14 +511,31 @@ async function geminiTurn({ s, model, contents, tools = true }) {
 
 /* полный диалог: модель → инструменты → модель (до 4 кругов) */
 async function askGemini(s, message, history = []) {
-  const model = s.model || 'gemini-4-hydrogen';
+  // перебор моделей: бесплатные модели Google часто перегружены (503) и думают десятками секунд
+  const CHAIN = s.chain && s.chain.length
+    ? s.chain
+    : [s.model || 'gemini-3.1-flash-lite', 'gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+  const tried = [];
+  for (const model of CHAIN) {
+    try {
+      const out = await geminiExchange(s, model, message, history);
+      tried.push(model + ':ok');
+      return { ...out, model };
+    } catch (e) {
+      tried.push(model + ':' + String(e.message || e).slice(0, 60));
+    }
+  }
+  return { ok: false, err: 'все модели заняты или недоступны — ' + tried.join('; '), actions: [], via: 'gemini' };
+}
+
+async function geminiExchange(s, model, message, history = []) {
   const contents = [...geminiHistory(history), { role: 'user', parts: [{ text: String(message) }] }];
   const actions = [];
   let image = null;
   let text = '';
 
-  for (let round = 0; round < 4; round++) {
-    const j = await geminiTurn({ s, model, contents });
+  for (let round = 0; round < 3; round++) {
+    const j = await geminiTurn({ s, model, contents, fast: true });
     const cand = j.candidates?.[0];
     const parts = cand?.content?.parts || [];
     const calls = parts.filter(p => p.functionCall).map(p => p.functionCall);
@@ -538,7 +556,7 @@ async function askGemini(s, message, history = []) {
     contents.push({ role: 'user', parts: responses });
   }
 
-  return { ok: true, text: text || (actions.length ? 'Сделала.' : ''), actions, image, via: 'gemini', model };
+  return { ok: true, text: text || (actions.length ? 'Сделала.' : ''), actions, image, via: 'gemini' };
 }
 
 api.post('/chat', async (req, res) => {
