@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Astra — рабочий стол</title>
+<style>
+  html, body { margin:0; height:100%; background:transparent; overflow:hidden; }
+  body { display:grid; place-items:center; }
+  canvas { display:block; }
+  #tip {
+    position:fixed; left:50%; bottom:8px; transform:translateX(-50%);
+    font:600 11px/1 "JetBrains Mono", Consolas, monospace;
+    color:#ececefb0; background:#111112cc; border:1px solid #ffffff17;
+    border-radius:999px; padding:5px 10px; white-space:nowrap;
+    opacity:0; transition:opacity .2s; pointer-events:none;
+  }
+  body:hover #tip { opacity:1; }
+  #panel {
+    position:fixed; right:6px; top:8px; display:flex; flex-direction:column; gap:4px;
+    opacity:0; transition:opacity .2s;
+  }
+  body:hover #panel { opacity:1; }
+  #panel button {
+    width:24px; height:24px; border-radius:7px; border:none; cursor:pointer;
+    background:#1a1a1ccc; color:#ececefb0; font-size:11px;
+    box-shadow:inset 0 1px 0 #ffffff1a;
+  }
+  #panel button:hover { background:#292c32; color:#fff; }
+  #err {
+    font:12px/1.5 "JetBrains Mono", Consolas, monospace; color:#f2846f;
+    text-align:center; padding:12px; display:none;
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three/three.module.js",
+    "three/addons/": "/vendor/three/examples/",
+    "@pixiv/three-vrm": "/vendor/three-vrm/three-vrm.module.js"
+  }
+}
+</script>
+</head>
+  <body>
+<div id="tip">перетащи меня · клик — поговорить</div>
+<div id="err"></div>
+<div id="panel">
+  <button id="talk">✦</button>
+  <button id="wave">👋</button>
+  <button id="hide">✕</button>
+</div>
+<script type="module" src="pet.js"></script>
+</body>
+</html>

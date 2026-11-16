@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Astra — ваш виртуальный ассистент</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Neucha&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three/three.module.js",
+    "three/addons/": "/vendor/three/examples/",
+    "@pixiv/three-vrm": "/vendor/three-vrm/three-vrm.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<div class="frame">
+  <div class="app" id="app">
+
+    <div class="bg" id="bg">
+      <canvas class="bg__canvas" id="bgCanvas"></canvas>
+      <div class="bg__veil"></div>
+      <div class="bg__texture"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ==================== ГЛАВНАЯ ==================== -->
+      <section class="page page--active" data-page="home">
+
+        <div class="launch" id="launch">
+          <div class="launch__inner">
+            <h1 class="launch__logo">Astra<span class="launch__spark">✦</span></h1>
+            <p class="launch__sub">Ваш виртуальный ассистент</p>
+            <div class="launch__actions">
+              <button class="lbtn" id="goChat"><span class="lbtn__ico">▢</span> Чат</button>
+              <button class="lbtn" id="goLaunch"><span class="lbtn__ico">◈</span> Запустить</button>
+            </div>
+            <p class="launch__note" id="launchNote">Ещё не проверяли</p>
+          </div>
+          <div class="launch__corner">
+            <button class="cbtn" data-goto="settings" title="Настройки">✎</button>
+            <button class="cbtn" data-goto="commands" title="Команды">▤</button>
+            <button class="cbtn" id="bell" title="Уведомления">◔</button>
+          </div>
+        </div>
+
+        <div class="chat" id="chat" hidden>
+          <aside class="side">
+            <div class="side__top">
+              <button class="side__icon" id="newChat" title="Новый чат">+</button>
+              <button class="side__icon" data-goto="commands" title="Команды">✎</button>
+            </div>
+            <ul class="side__list"></ul>
+            <button class="side__icon side__icon--bottom" data-goto="settings" title="Настройки">⚙</button>
+          </aside>
+
+          <main class="chat__main">
+            <div class="chat__scroll" id="chatScroll">
+              <div class="hero" id="hero">
+                <h1 class="hero__logo">Astra<span class="hero__spark">✦</span></h1>
+                <p class="hero__sub" id="heroSub">Ну что, Милое, начнём?</p>
+              </div>
+              <div class="msgs" id="msgs"></div>
+            </div>
+
+            <div class="composer-wrap">
+              <div class="quick" id="quick">
+                <button data-say="Какая погода?">Погода</button>
+                <button data-say="Открой YouTube">YouTube</button>
+                <button data-say="Открой блокнот">Блокнот</button>
+                <button data-say="Что у меня открыто?">Окна</button>
+                <button data-say="Заблокируй компьютер">Блокировка</button>
+              </div>
+
+              <form class="composer" id="composer">
+                <button type="button" class="composer__plus" title="Быстрые действия" id="plusBtn">+</button>
+                <div class="composer__field">
+                  <textarea id="input" rows="1" placeholder="Спросите о чём угодно..."></textarea>
+                  <span class="composer__hint">Поддерживаются описательные действия</span>
+                </div>
+                <div class="composer__right">
+                  <button type="button" class="composer__tool" title="Скриншот" id="shotBtn">▤</button>
+                  <button type="button" class="composer__tool" title="Голос" id="ttsBtn">▮</button>
+                  <button type="submit" class="composer__send" title="Отправить">↑</button>
+                </div>
+              </form>
+
+              <div class="chips">
+                <span class="chip chip--on" id="chipThink">Задумчиво</span>
+                <span class="chip" id="chipPro">Astra Pro</span>
+                <span class="chip chip--ghost" id="chipLast">Последний чат</span>
+                <span class="chip chip--ghost" id="chipCtx">Новый контекст?</span>
+              </div>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <!-- ==================== КОМАНДЫ ==================== -->
+      <section class="page" data-page="commands">
+        <div class="wrap">
+          <header class="page-head">
+            <h2 class="page-title">Команды</h2>
+            <div class="row">
+              <button class="btn" id="wfFit">Вписать</button>
+              <button class="btn" id="wfLayout">Автораскладка</button>
+              <button class="btn btn--go" id="wfRun">▶ Запустить</button>
+            </div>
+          </header>
+          <div class="page-body">
+            <div class="card cmd-list">
+              <div class="cmd-list__head"><span>Команды</span><button class="iconbtn" id="cmdAdd">+</button></div>
+              <ul class="cmd-list__items" id="cmdList"></ul>
+            </div>
+            <div class="card cmd-detail">
+              <div class="cmd-detail__head">
+                <input class="field" id="wfName" value="Открыть YouTube и найти">
+                <span class="hint" id="wfMeta"></span>
+                <span class="spacer"></span>
+                <button class="btn btn--sm" id="wfSave">Сохранить</button>
+                <button class="btn btn--go" id="wfRun2">▶ Запустить</button>
+              </div>
+              <div class="wf">
+                <div class="wf__bar">
+                  <button class="btn btn--sm" id="wfAdd">+ Узел</button>
+                  <button class="btn btn--sm" id="wfLink">→ Связь</button>
+                  <button class="btn btn--sm" id="wfDelete">Удалить</button>
+                  <span class="divider"></span>
+                  <span class="hint">тяните холст · клик по узлу · тяните узел</span>
+                  <span class="spacer"></span>
+                  <span class="hint" id="wfZoom">100%</span>
+                </div>
+                <div class="wf__body">
+                  <div class="wf__canvas" id="canvas">
+                    <div class="wf__grid"></div>
+                    <svg class="wf__edges" id="edges"></svg>
+                    <div class="wf__flow" id="flow"></div>
+                  </div>
+                  <div class="wf__log">
+                    <div class="wf__log-head">Лог выполнения <button class="x" id="logClear">×</button></div>
+                    <ul id="logRows"><li class="empty">Пока ничего не запускали.</li></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== МОДЕЛЬ ==================== -->
+      <section class="page" data-page="model">
+        <div class="wrap">
+          <header class="page-head">
+            <h2 class="page-title">Модель</h2>
+            <div class="segmented"><button class="seg seg--on">Внешность</button><button class="seg">Поведение</button></div>
+          </header>
+          <div class="page-body page-body--cols">
+            <div class="card model-stage">
+              <div class="vrm-host" id="vrmHost"></div>
+              <div class="model-stage__glow"></div>
+              <span class="model-stage__badge" id="vrmBadge">VRM: загрузка…</span>
+              <div class="model-stage__bar">
+                <button class="btn btn--sm" id="vrmPick">Загрузить VRM</button>
+                <button class="btn btn--sm" id="vrmWave">Помахать</button>
+                <button class="btn btn--sm" id="vrmDesktop">На рабочий стол</button>
+              </div>
+            </div>
+            <div class="col">
+              <section class="card settings-block">
+                <h3>Имя</h3>
+                <p class="desc">Как меня звать. Можно придумать любое.</p>
+                <input class="field" id="petName" value="Astra">
+              </section>
+              <section class="card settings-block">
+                <h3>Роль</h3>
+                <p class="desc">Характер и манера общения.</p>
+                <div class="pills">
+                  <span class="pill pill--on">Ассистент</span>
+                  <span class="pill">Джарвис</span>
+                  <span class="pill">Подруга</span>
+                  <span class="pill">Своё…</span>
+                </div>
+              </section>
+              <section class="card settings-block">
+                <h3>На рабочем столе</h3>
+                <p class="desc">Модель живёт поверх окон, сама находит край окна и сидит на нём.</p>
+                <div class="setting-row"><span>Поверх всех окон</span><span class="toggle toggle--on" id="tPetOn"></span></div>
+                <div class="setting-row"><span>Реагировать на курсор</span><span class="toggle toggle--on" id="tPetCursor"></span></div>
+                <div class="setting-row"><span>Сидеть на краю окна</span><span class="toggle toggle--on" id="tPetEdge"></span></div>
+                <div class="setting-row"><span>Танцевать под музыку</span><span class="toggle" id="tPetDance"></span></div>
+                <div class="slider-row"><label>Размер</label><input type="range" id="petScale" min="0.5" max="1.6" step="0.05" value="1"><b id="petScaleVal">1.00</b></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ГОЛОС ==================== -->
+      <section class="page" data-page="voice">
+        <div class="wrap">
+          <header class="page-head">
+            <h2 class="page-title">Голос</h2>
+            <div class="segmented"><button class="seg seg--on">Озвучка</button><button class="seg">Поведение</button></div>
+          </header>
+          <div class="page-body page-body--cols">
+            <div class="col">
+              <section class="card settings-block">
+                <h3>Движок</h3>
+                <p class="desc">Голосовой ввод отключён. Здесь только синтез речи.</p>
+                <div class="select">
+                  <button class="select__value" id="engineValue">Системный (браузер) <span>⌄</span></button>
+                  <ul class="select__menu" id="engineMenu">
+                    <li class="on" data-v="system">Системный (браузер)</li>
+                    <li data-v="cloud">Облачный TTS</li>
+                  </ul>
+                </div>
+              </section>
+
+              <section class="card settings-block">
+                <h3>Голос</h3>
+                <p class="desc">Нейронные голоса звучат заметно живее стандартных.</p>
+                <div class="select">
+                  <button class="select__value" id="voiceValue">Загрузка голосов… <span>⌄</span></button>
+                  <ul class="select__menu" id="voiceMenu"></ul>
+                </div>
+                <button class="btn btn--sm" id="voiceRefresh">Обновить список</button>
+              </section>
+
+              <section class="card settings-block">
+                <h3>Тонкая настройка</h3>
+                <div class="slider-row"><label>Скорость</label><input type="range" id="rate" min="0.6" max="1.6" step="0.02" value="1.02"><b id="rateVal">1.02</b></div>
+                <div class="slider-row"><label>Высота</label><input type="range" id="pitch" min="0.7" max="1.5" step="0.02" value="1.06"><b id="pitchVal">1.06</b></div>
+                <div class="slider-row"><label>Громкость</label><input type="range" id="volume" min="0" max="1" step="0.02" value="1"><b id="volumeVal">1.00</b></div>
+              </section>
+            </div>
+
+            <div class="col">
+              <section class="card settings-block">
+                <h3>Живая речь</h3>
+                <p class="desc">Именно это делает голос человеческим: паузы между фразами, а не одна длинная строка.</p>
+                <div class="setting-row"><span>Разбивать на фразы и паузить</span><span class="toggle toggle--on" id="tPause"></span></div>
+                <div class="setting-row"><span>Лёгкий вдох перед длинной фразой</span><span class="toggle toggle--on" id="tBreath"></span></div>
+                <div class="setting-row"><span>Убирать звёздочки и разметку</span><span class="toggle toggle--on" id="tClean"></span></div>
+                <div class="slider-row"><label>Пауза между фразами, мс</label><input type="range" id="pauseMs" min="80" max="700" step="10" value="260"><b id="pauseVal">260</b></div>
+              </section>
+
+              <section class="card settings-block">
+                <h3>Проверка</h3>
+                <p class="desc">Послушайте, как звучит с текущими настройками.</p>
+                <textarea class="field field--area" id="sample" rows="4">Привет. Я Астра. Живу в твоём компьютере и слушаю, когда зовёшь. Что будем делать сегодня?</textarea>
+                <div class="row" style="margin-top:10px">
+                  <button class="btn btn--go" id="preview">▶ Прослушать</button>
+                  <button class="btn" id="stop">■ Стоп</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ИИ ==================== -->
+      <section class="page" data-page="ai">
+        <div class="wrap">
+          <header class="page-head">
+            <h2 class="page-title">Настройки ИИ</h2>
+            <div class="segmented"><button class="seg seg--on">Основной ИИ</button><button class="seg">Личность</button></div>
+          </header>
+          <div class="page-body page-body--one">
+            <section class="card settings-block">
+              <h3>◍ Общие</h3>
+              <div class="label-row"><span class="label">Провайдер ИИ</span></div>
+              <div class="select">
+                <button class="select__value" id="aiValue">Нет <span>⌄</span></button>
+                <ul class="select__menu" id="aiMenu">
+                  <li class="on" data-v="none">Нет</li>
+                  <li data-v="openai">OpenAI</li>
+                  <li data-v="claude">Claude</li>
+                  <li data-v="gemini">Gemini</li>
+                  <li data-v="grok">Grok</li>
+                  <li data-v="openrouter">OpenRouter</li>
+                  <li data-v="ollama">Ollama</li>
+                  <li data-v="lmstudio">LM Studio</li>
+                </ul>
+              </div>
+              <div class="label-row"><span class="label">API-ключ</span></div>
+              <input class="field" id="apiKey" type="password" placeholder="sk-…">
+              <div class="label-row"><span class="label">Модель</span></div>
+              <input class="field" id="aiModel" placeholder="gpt-4o-mini">
+              <div class="label-row"><span class="label">Свой endpoint (для Ollama / LM Studio)</span></div>
+              <input class="field" id="aiEndpoint" placeholder="http://127.0.0.1:11434">
+              <div class="row" style="margin-top:12px">
+                <button class="btn btn--go" id="aiSave">Сохранить</button>
+                <button class="btn" id="aiTest">Проверить связь</button>
+              </div>
+              <p class="notice">Ключ хранится локально в data/settings.json и никуда не отправляется.</p>
+            </section>
+
+            <section class="card settings-block">
+              <div class="head-row"><h3>◈ Навыки</h3><button class="btn btn--sm" id="skillsRescan">Пересканировать</button></div>
+              <p class="desc">Папки SKILL.md, общие с другими агентскими инструментами. Astra читает их из общего хранилища навыков в домашней папке и из рабочей папки проекта.</p>
+              <ul class="skill-list" id="skillList">
+                <li><b>open_url</b><span>открыть ссылку в браузере</span></li>
+                <li><b>open_application</b><span>запустить программу</span></li>
+                <li><b>type_text</b><span>ввести текст в активное окно</span></li>
+                <li><b>press_keys</b><span>нажать горячие клавиши</span></li>
+                <li><b>clipboard</b><span>прочитать или записать буфер</span></li>
+                <li><b>system</b><span>блокировка, звук, выключение</span></li>
+                <li><b>screenshot</b><span>снимок экрана</span></li>
+                <li><b>files</b><span>поиск файлов в папках</span></li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ПЛАГИНЫ ==================== -->
+      <section class="page" data-page="plugins">
+        <div class="wrap">
+          <header class="page-head">
+            <h2 class="page-title">Плагины</h2>
+            <div class="segmented"><button class="seg seg--on">Установленные <i>4</i></button><button class="seg">Каталог</button><button class="seg">Разработка</button></div>
+          </header>
+          <div class="page-body page-body--one">
+            <section class="card settings-block">
+              <div class="head-row"><h3>◈ Среды выполнения</h3><button class="btn btn--sm">Перезапустить все</button></div>
+              <div class="runtime">
+                <span class="runtime__meta" id="runtimeMeta">node · проверка…</span>
+              </div>
+            </section>
+
+            <section class="card settings-block">
+              <ul class="plugin-list">
+                <li class="plugin">
+                  <span class="plugin__ico" style="background:#2f3a24">⛏</span>
+                  <div class="plugin__body">
+                    <div class="plugin__title">Minecraft for Astra <em>v0.3.3</em> <span class="tag tag--paid">Paid</span></div>
+                    <p class="plugin__desc">Lets Astra play Minecraft: a mineflayer bot exposed as tools and triggers</p>
+                    <div class="plugin__tags"><span>tools</span><span>triggers</span></div>
+                  </div>
+                  <span class="toggle"></span>
+                </li>
+                <li class="plugin">
+                  <span class="plugin__ico" style="background:#2a2436">⌗</span>
+                  <div class="plugin__body">
+                    <div class="plugin__title">Knowledge Graph <em>v0.2.0</em> <span class="tag tag--paid">Paid</span></div>
+                    <p class="plugin__desc">A live knowledge graph of your Astra chats and memory: Obsidian-style 2D, a cosmic 3D force-graph, and a 3D «Brain of Astra» system view.</p>
+                    <div class="plugin__tags"><span>tools</span><span>ui_contributions</span></div>
+                  </div>
+                  <span class="toggle"></span>
+                </li>
+                <li class="plugin">
+                  <span class="plugin__ico" style="background:#3a2820">🐈</span>
+                  <div class="plugin__body">
+                    <div class="plugin__title">Companion Cat <em>v0.1.7</em> <span class="tag tag--paid">Paid</span></div>
+                    <p class="plugin__desc">A cat that flies around the UI and says random things</p>
+                    <div class="plugin__tags"><span>ui_contributions</span><span>dom_access</span></div>
+                  </div>
+                  <span class="toggle"></span>
+                </li>
+                <li class="plugin">
+                  <span class="plugin__ico" style="background:#292c32">♟</span>
+                  <div class="plugin__body">
+                    <div class="plugin__title">Шахматы Astra <em>v0.1.7</em> <span class="tag tag--paid">Paid</span></div>
+                    <p class="plugin__desc">Партия в шахматы против Astra прямо в чате, с подсказками и разбором.</p>
+                    <div class="plugin__tags"><span>tools</span><span>ui_contributions</span></div>
+                  </div>
+                  <span class="toggle"></span>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== НАСТРОЙКИ ==================== -->
+      <section class="page" data-page="settings">
+        <div class="wrap">
+          <header class="page-head"><h2 class="page-title">Настройки</h2></header>
+          <div class="page-body page-body--one">
+            <section class="card settings-block">
+              <h3>Фон</h3>
+              <p class="desc">Выберите фон для главного экрана</p>
+              <div class="select">
+                <button class="select__value" id="bgValue">Threads <span>⌄</span></button>
+                <ul class="select__menu" id="bgMenu">
+                  <li data-v="solid">Сплошной цвет</li>
+                  <li class="on" data-v="threads">Threads</li>
+                  <li data-v="veil">Dark Veil</li>
+                  <li data-v="gradient">Градиент</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="card settings-block">
+              <div class="head-row"><h3>Пузыри сообщений ИИ</h3><span class="toggle toggle--on" id="tBubbles"></span></div>
+              <p class="desc">Показывать ответы ИИ в пузырях. Выбор действует для всех фонов.</p>
+            </section>
+
+            <section class="card settings-block">
+              <h3>Тонкая настройка</h3>
+              <div class="slider-row"><label>Скорость</label><input type="range" id="bgSpeed" min="0.2" max="2" step="0.1" value="1"><b id="bgSpeedVal">1</b></div>
+            </section>
+
+            <section class="card settings-block">
+              <div class="head-row"><h3>Анимировать в неактивном окне</h3><span class="toggle" id="tInactive"></span></div>
+              <p class="desc">Продолжать анимацию фона, когда фокус в другом окне. Если выключено — фон замирает на последнем кадре и экономит GPU и батарею.</p>
+            </section>
+
+            <section class="card settings-block">
+              <h3>Цвета фона</h3>
+              <p class="desc">Настройте цвет фона и анимированного элемента для выбранной анимации</p>
+              <div class="color-row"><span>Цвет фона</span><input type="color" id="colBg" value="#0b0b0d"></div>
+              <div class="color-row"><span>Цвет анимации</span><input type="color" id="colAnim" value="#ffffff"></div>
+            </section>
+
+            <section class="card settings-block">
+              <h3>Система</h3>
+              <p class="desc" id="sysInfo">Проверка окружения…</p>
+              <div class="row">
+                <button class="btn" id="sysWindows">Открытые окна</button>
+                <button class="btn" id="sysShot">Скриншот</button>
+                <button class="btn" id="sysWeather">Погода</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+
+    <div class="titlebar" aria-hidden="true">
+      <span class="titlebar__btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5v-2h14z"/></svg></span>
+      <span class="titlebar__btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M5 5h14v14H5V5zm2 2v10h10V7H7z"/></svg></span>
+      <span class="titlebar__btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13.46 12L19 17.54V19h-1.46L12 13.46 6.46 19H5v-1.46L10.54 12 5 6.46V5h1.46L12 10.54 17.54 5H19v1.46z"/></svg></span>
+    </div>
+
+    <nav class="nav">
+      <div class="nav__brand"><span class="nav__logo">✦</span> Astra</div>
+      <div class="tabs" id="tabs">
+        <span class="tabs__ind" id="tabInd"></span>
+        <span class="tab tab--active" data-tab="home"><i>⌂</i> Главная</span>
+        <span class="tab" data-tab="commands"><i>&gt;_</i> Команды</span>
+        <span class="tab" data-tab="model"><i>⬡</i> Модель</span>
+        <span class="tab" data-tab="voice"><i>◍</i> Голос</span>
+        <span class="tab" data-tab="ai"><i>▣</i> ИИ</span>
+        <span class="tab" data-tab="plugins"><i>☰</i> Плагины</span>
+        <span class="tab" data-tab="settings"><i>⚙</i> Настройки</span>
+      </div>
+    </nav>
+
+    <div class="status">
+      <span class="status__left" id="statusLeft">Меню <i>·</i> <b>Pro</b></span>
+      <div class="status__center">
+        <span class="status__pill" id="pillAI">AI</span>
+        <span class="status__pill status__pill--on" id="pillTTS">TTS</span>
+      </div>
+      <span class="status__right" id="statusRight">Сообщить</span>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+  </div>
+</div>
+
+<input type="file" id="vrmFile" accept=".vrm,.glb" hidden>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
