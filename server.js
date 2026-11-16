@@ -525,7 +525,8 @@ async function askGemini(s, message, history = []) {
 
     if (!calls.length) break;
 
-    contents.push({ role: 'model', parts: parts.map(p => p.functionCall ? { functionCall: p.functionCall } : { text: p.text || '' }).filter(p => p.text !== '') });
+    // возвращаем модели ЕЁ ЖЕ parts как есть — с thoughtSignature, иначе Google отклоняет второй круг
+    contents.push({ role: 'model', parts });
 
     const responses = [];
     for (const c of calls) {
